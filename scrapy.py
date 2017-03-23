@@ -11,13 +11,13 @@ from selenium.common.exceptions import StaleElementReferenceException
 my_email = "nlyu2@illinois.edu"
 my_pass = "l7erfe3n"
 
+
 def waitForLoad(driver):
     elem = driver.find_element_by_tag_name("html")
     count = 0
     while True:
         count += 1
         if count > 10:
-            print("Timing out after 10 seconds and returning")
             return
         time.sleep(.5)
         try:
@@ -49,6 +49,11 @@ def login(driver):
 	return
 
 
+def sparce_text(i):
+	i = i.replace('\nLife Member', '')
+	i = i.replace('   ', '\n') 
+	return i  
+
 
 url = start()
 
@@ -57,18 +62,34 @@ driver.get(url)
 
 login(driver)
 waitForLoad(driver)
-directory_button=driver.find_element_by_xpath("//a[@href='http://www.uialumninetwork.org/directory.html']")
+
+directory_button = driver.find_element_by_xpath("//a[@href='http://www.uialumninetwork.org/directory.html']")
 directory_button.click()
+
 waitForLoad(driver)
+
 company_text=driver.find_element_by_id("work_company2")
 company_text.send_keys("")
+
 company_button=driver.find_element_by_xpath("//div[@id='search_geography']")
 company_button.click()
+
 waitForLoad(driver)
-result_text=driver.find_elements_by_class_name("result")
-for i in result_text:
-	print(i.text, '\n')
+
+for page in range(5):
+	result_text=driver.find_elements_by_class_name("result")
+	for i in result_text:
+		name_card = sparce_text(i.text)
+		print(name_card, '\n')
+	
+	next_button=driver.find_elements_by_xpath("//div[@class='text_butt']")
+	next_button[page].click()
+	waitForLoad(driver)
+
+# result_text = driver.find_elements_by_class_name("result")
+# for i in result_text:
+# 	name_card = sparce_text(i.text)
+# 	print(name_card, '\n')
 cur_html=driver.page_source
-#print(driver.current_url)
-#print(cur_html)
+
 driver.close()
