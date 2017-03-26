@@ -11,19 +11,19 @@ from selenium.common.exceptions import StaleElementReferenceException
 my_email = "nlyu2@illinois.edu"
 my_pass = "756251901"
 
-
-def waitForLoad(driver):
+def waitForLoad(driver, wait_time):
     elem = driver.find_element_by_tag_name("html")
     count = 0
     while True:
         count += 1
-        if count > 10:
+        if count > wait_time:
             return
-        time.sleep(.5)
+        time.sleep(1)
         try:
             elem == driver.find_element_by_tag_name("html")
         except StaleElementReferenceException:
             return
+
 
 def start():
 	html = urlopen("https://www.linkedin.com")
@@ -52,16 +52,65 @@ def sparce_text(i):
 	i = i.replace('   ', '\n') 
 	return i  
 
+firefox_profile = webdriver.FirefoxProfile()
+firefox_profile.set_preference('permissions.default.image', 2)
+firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
+
+driver = webdriver.Firefox(firefox_profile=firefox_profile)
 
 url = "https://www.linkedin.com"
 
-driver = Firefox()
+#driver = Firefox()
 driver.get(url)
 
 login(driver)
-waitForLoad(driver)
+waitForLoad(driver, 1.0)
 
 driver.get("https://www.linkedin.com/school/2650/alumni?filterByOption=graduated")
+waitForLoad(driver, 1.0)
+
+start= time.time()
+
+while(True):
+	driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+	waitForLoad(driver, 0.7)
+	end = time.time()
+	if(end - start >= 3):
+		break
+
+name_button=driver.find_elements_by_xpath("//a[@class='Sans-17px-black-85%-semibold']")
+window_main = driver.window_handles[0]
+for i in range(0, len(name_button)):
+	name_button[i+2].click()
+	waitForLoad(driver, 1.0)
+	window_cur = driver.window_handles[1]
+	driver.switch_to_window(window_cur)
+	waitForLoad(driver, 1.0)
+
+	driver.execute_script("window.scrollTo(0, 1000);")
+
+	waitForLoad(driver, 2.0)
+	result_main = driver.find_element_by_xpath("//section[@class='pv-profile-section experience-section ember-view']")
+	
+	#result_main = result_main1.find_element_by_xpath("//ul[@class='pv-profile-section__section-info section-info pv-profile-section__section-info--has-no-more']")
+	#print(result_main.text)
+	result_text = result_main.find_elements_by_xpath("//h3[@class='Sans-17px-black-85%-semibold']")
+	result_text1 = result_main.find_elements_by_xpath("//span[@class='pv-entity__secondary-title Sans-15px-black-55%']")
+
+	print(len(result_text), len(result_text1))
+	for j in range(0, min(len(result_text), len(result_text1))):
+		name_card = result_text[j].text + '\n' 
+		name_card = name_card + result_text1[j].text + '\n'
+		print(name_card)
+		
+	# name_card = result_text[0].text + '\n' 
+	# name_card = name_card + result_text1[0].text + '\n'
+	# print(name_card)
+	driver.close()
+	driver.switch_to_window(window_main)
+
+#print(len(name_button))
+
 # waitForLoad(driver)
 
 # directory_button = driver.find_element_by_xpath("//a[@href='http://www.uialumninetwork.org/directory.html']")
@@ -93,4 +142,4 @@ driver.get("https://www.linkedin.com/school/2650/alumni?filterByOption=graduated
 # # 	print(name_card, '\n')
 # cur_html=driver.page_source
 
-driver.close()
+driver.quit()
