@@ -4,29 +4,85 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from seleniumrequests import Firefox
 import time
+from time import sleep
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import StaleElementReferenceException
-
+from threading import Thread
+import threading
+import copy
 
 my_email = "nlyu2@illinois.edu"
-my_pass = "l7erfe3n"
+my_pass = "756251901"
+my_data_size = 15
+my_ready = -3
+my_total_thread = 3
+my_counter = 0
+
+class myThread (threading.Thread):
+	def __init__(self, threadID, driver):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.driver = driver
+	
+	def run(self):
+		global my_data_size, my_ready, my_total_thread
+		#print("thread start....")
+		driver_to_alumini(self.driver)
+
+		name_button = get_person(self.driver)
+		name_button_str = int((self.threadID - 1) * len(name_button) / my_total_thread)
+		name_button_end = int((self.threadID) * len(name_button) / my_total_thread)
+		name_button = name_button[name_button_str:name_button_end]
+
+		threadLock.acquire()
+		my_ready = my_ready + 1
+		threadLock.release()
+
+		while(my_ready < 0):
+			sleep(1)
+
+		get_personal_info_all_parent(self.driver, name_button)
+		self.driver.quit()
 
 
-def waitForLoad(driver):
+
+def init_driver():
+	firefox_profile = webdriver.FirefoxProfile()
+	firefox_profile.set_preference('permissions.default.image', 2)
+	firefox_profile.set_preference("permissions.default.stylesheet", 2);
+	firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
+	return webdriver.Firefox(firefox_profile=firefox_profile) 
+
+
+def driver_to_alumini(driver):
+	url = "https://www.linkedin.com"
+	driver.get(url)
+
+	#2. login in
+	login(driver)
+	waitForLoad(driver, 1.0)
+
+	#3. get in to uiuc alumini page
+	driver.get("https://www.linkedin.com/school/2650/alumni?filterByOption=graduated")
+	waitForLoad(driver, 1.0)
+
+
+def waitForLoad(driver, wait_time):
     elem = driver.find_element_by_tag_name("html")
     count = 0
     while True:
         count += 1
-        if count > 10:
+        if count > wait_time:
             return
-        time.sleep(.5)
+        time.sleep(1)
         try:
             elem == driver.find_element_by_tag_name("html")
         except StaleElementReferenceException:
             return
 
+
 def start():
-	html = urlopen("http://www.uialumninetwork.org/directory.html")
+	html = urlopen("https://www.linkedin.com")
 	bsObj = BeautifulSoup(html, "html.parser")
 	allText = bsObj.findAll("input",{"name":"checksum"})
 	checksum=allText[0]['value']
@@ -35,17 +91,15 @@ def start():
 
 
 def login(driver):
-
-	button = driver.find_element_by_id("yes_pass")
-	email = driver.find_element_by_id("email")
-	password = driver.find_element_by_id("password")
+	driver.implicitly_wait(10)
+	email = driver.find_element_by_id("login-email")
+	password = driver.find_element_by_id("login-password")
+	button = driver.find_element_by_id("login-submit")
 
 	email.send_keys(my_email)
 	password.send_keys(my_pass)
 
 	button.click()
-	continu = driver.find_element_by_xpath("//div[@alt='UIAA Alumni Sign-in Here']")
-	continu.click()
 	return
 
 
@@ -55,41 +109,105 @@ def sparce_text(i):
 	return i  
 
 
-url = start()
+def get_person(driver):
+	start= time.time()
 
-driver = Firefox()
-driver.get(url)
+	while(True):
+		driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+		waitForLoad(driver, 0.5)
+		end = time.time()
+		if(end - start >= my_data_size):
+			break
+	name_button=driver.find_elements_by_xpath("//a[@class='Sans-17px-black-85%-semibold']")
+	return name_button
 
-login(driver)
-waitForLoad(driver)
 
-directory_button = driver.find_element_by_xpath("//a[@href='http://www.uialumninetwork.org/directory.html']")
-directory_button.click()
 
-waitForLoad(driver)
+def get_personal_info_all_parent(driver, name_button):
+	#print("thread begin....")
+	window_main = driver.window_handles[0]
+	for i in range(0, 3):
+		name_button[i].click()
 
-company_text=driver.find_element_by_id("work_company2")
-company_text.send_keys("")
+		waitForLoad(driver, 1.0)
+		window_cur = driver.window_handles[1]
+		driver.switch_to_window(window_cur)
+		waitForLoad(driver, 1.0)
 
-company_button=driver.find_element_by_xpath("//div[@id='search_geography']")
-company_button.click()
+		get_personal_info(driver, i)
+		driver.close()
+		driver.switch_to_window(window_main)
 
-waitForLoad(driver)
 
-for page in range(5):
-	result_text=driver.find_elements_by_class_name("result")
-	for i in result_text:
-		name_card = sparce_text(i.text)
-		print(name_card, '\n')
+def get_personal_info_all_child(driver, name_button):
+	#print("thread child begin....")
+	window_main = driver.window_handles[0]
+	for i in range(0, 3):
+		a = name_button[i].get_attribute("href")
+		driver.get(a)
+		waitForLoad(driver, 2.0)
+
+		get_personal_info(driver, i)
+
+		driver.switch_to_window(window_main)
+		driver.close()
+
+
+def get_personal_info(driver, i):
+	global my_counter
+
+	driver.execute_script("window.scrollTo(0, 1600);")
 	
-	next_button=driver.find_elements_by_xpath("//div[@class='text_butt']")
-	next_button[page].click()
-	waitForLoad(driver)
+	try:
+		driver.implicitly_wait(10)
+		result_name = driver.find_element_by_xpath("//h1[@class='pv-top-card-section__name Sans-26px-black-85% mb1']")
+		result_main = driver.find_element_by_xpath("//section[@class='pv-profile-section experience-section ember-view']")
+		result_text = result_main.find_elements_by_xpath("//h3[@class='Sans-17px-black-85%-semibold']")
+		result_text1 = result_main.find_elements_by_xpath("//span[@class='pv-position-entity__secondary-title pv-entity__secondary-title Sans-15px-black-55%']")
+	except:
+		driver.execute_script("window.scrollTo(0, 2000);")
 
-# result_text = driver.find_elements_by_class_name("result")
-# for i in result_text:
-# 	name_card = sparce_text(i.text)
-# 	print(name_card, '\n')
-cur_html=driver.page_source
+	try:
+		driver.implicitly_wait(10)
+		result_name = driver.find_element_by_xpath("//h1[@class='pv-top-card-section__name Sans-26px-black-85% mb1']")
+		result_main = driver.find_element_by_xpath("//section[@class='pv-profile-section experience-section ember-view']")
+		result_text = result_main.find_elements_by_xpath("//h3[@class='Sans-17px-black-85%-semibold']")
+		result_text1 = result_main.find_elements_by_xpath("//span[@class='pv-position-entity__secondary-title pv-entity__secondary-title Sans-15px-black-55%']")
+	except:
+		print(i)
+		print("No info\n")
+		return False
 
-driver.close()
+	threadLock.acquire()
+	print(my_counter)
+	my_counter += 1
+	print(result_name.text)
+	for j in range(0, min(len(result_text), len(result_text1))):
+		name_card = ('Title:' + result_text[j].text + '\n' + 'Company:' + result_text1[j].text)
+		print(name_card)
+	print('\n')
+	threadLock.release()
+	return True
+
+
+#main 
+print('project start1')
+
+#create firfox explorer
+threadLock = threading.Lock()
+
+driver = []
+for i in range(my_total_thread):
+	driver_temp = init_driver()
+	driver.append(driver_temp)
+
+thread = []
+for i in range(my_total_thread):
+	thread_temp = myThread(i+1, driver[i])
+	thread.append(thread_temp)
+
+for i in range(my_total_thread):
+	thread[i].start()
+
+for i in range(my_total_thread):
+	thread[i].join()
