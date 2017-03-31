@@ -9,19 +9,17 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import StaleElementReferenceException
 from threading import Thread
 import threading
-import multiprocessing
-from multiprocessing import Pool, Process, Value, Array
 import copy
 import csv
 
 
 my_email = "nlyu2@illinois.edu"
 my_pass = "756251901"
-my_data_size = 300 #input
-my_total_thread = 2 #input
-
+my_data_size = 5 #input
+my_total_thread = 3 #input
 my_ready = -my_total_thread 
 my_counter = 0
+
 
 class myThread (threading.Thread):
 	def __init__(self, threadID, driver):
@@ -35,7 +33,6 @@ class myThread (threading.Thread):
 		driver_to_alumini(self.driver)
 
 		name_button = get_person(self.driver)
-		
 		name_button_str = int((self.threadID - 1) * len(name_button) / my_total_thread)
 		name_button_end = int((self.threadID) * len(name_button) / my_total_thread)
 		name_button = name_button[name_button_str:name_button_end]
@@ -53,32 +50,6 @@ class myThread (threading.Thread):
 		get_personal_info_all_parent(self.driver, name_button)
 		self.driver.quit()
 
-
-def my_processors(threadID, my_ready, my_counter):
-	driver = init_driver()
-	global my_data_size, my_total_thread
-	print(threadID, " start....")
-	driver_to_alumini(driver)
-
-	name_button = get_person(driver)
-	
-	name_button_str = int((threadID - 1) * len(name_button) / my_total_thread)
-	name_button_end = int((threadID) * len(name_button) / my_total_thread)
-	name_button = name_button[name_button_str:name_button_end]
-
-	print("completing geting data, data size is: ", len(name_button))
-	print("waiting for the other thread to be completed....")
-	
-	threadLock.acquire()
-	my_ready.value += 1
-	threadLock.release()
-
-	while(my_ready.value < 0):
-		sleep(1)
-
-	print(threadID, " start scrapying...")
-	get_personal_info_all_parent(driver, name_button, my_counter)
-	driver.quit()
 
 
 def init_driver():
@@ -158,15 +129,18 @@ def get_person(driver):
 
 
 
-def get_personal_info_all_parent(driver, name_button, my_counter):
+def get_personal_info_all_parent(driver, name_button):
 	#print("thread begin....")
 	window_main = driver.window_handles[0]
-	for i in range(0, len(name_button)): #................................................
+	for i in range(0, 3): #................................................
 		name_button[i].click()
+		print("getting ", i, " person")
+		waitForLoad(driver, 1.0)
 		window_cur = driver.window_handles[1]
 		driver.switch_to_window(window_cur)
+		waitForLoad(driver, 1.0)
 
-		get_personal_info(driver, i, my_counter)
+		get_personal_info(driver, i)
 		driver.close()
 		driver.switch_to_window(window_main)
 
@@ -185,97 +159,64 @@ def get_personal_info_all_child(driver, name_button):
 		driver.close()
 
 
-def get_personal_info(driver, i, my_counter):
-	print("good?")
-	driver.implicitly_wait(30)
-	try:
-		result_name = driver.find_element_by_xpath("//h1[@class='pv-top-card-section__name Sans-26px-black-85% mb1']")
-	except:
-		return False
+def get_personal_info(driver, i):
+	global my_counter
+
 	driver.execute_script("window.scrollTo(0, 1500);")
 	
 	try:
 		driver.implicitly_wait(5)
+		result_name = driver.find_element_by_xpath("//h1[@class='pv-top-card-section__name Sans-26px-black-85% mb1']")
 		result_main = driver.find_element_by_xpath("//section[@class='pv-profile-section experience-section ember-view']")
 		result_text = result_main.find_elements_by_xpath("//h3[@class='Sans-17px-black-85%-semibold']")
 		result_text1 = result_main.find_elements_by_xpath("//span[@class='pv-position-entity__secondary-title pv-entity__secondary-title Sans-15px-black-55%']")
 	except:
-		print("no good")
-		driver.execute_script("window.scrollTo(0, 2000);")
+		driver.execute_script("window.scrollTo(0, 1800);")
 
 	try:
-		driver.implicitly_wait(8)
+		driver.implicitly_wait(5)
+		result_name = driver.find_element_by_xpath("//h1[@class='pv-top-card-section__name Sans-26px-black-85% mb1']")
 		result_main = driver.find_element_by_xpath("//section[@class='pv-profile-section experience-section ember-view']")
 		result_text = result_main.find_elements_by_xpath("//h3[@class='Sans-17px-black-85%-semibold']")
 		result_text1 = result_main.find_elements_by_xpath("//span[@class='pv-position-entity__secondary-title pv-entity__secondary-title Sans-15px-black-55%']")
 	except:
 		with csvLock:
-			print("getting ", my_counter.value, " person")
-			spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
-			spamwriter.writerow([str(my_counter.value), result_name.text])
+			spamwriter.writerow([str(my_counter), result_name.text])
 			my_counter += 1
 			spamwriter.writerow(['NO INFO'])
 			spamwriter.writerow([])  
 		return False
 
 	with csvLock:
-		spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
-		spamwriter.writerow([str(my_counter.value), result_name.text])
-		print("getting ", my_counter.value, " person")
-		my_counter.value += 1
+		spamwriter.writerow([str(my_counter), result_name.text])
+		my_counter += 1
 		for j in range(0, min(len(result_text), len(result_text1))):
 			spamwriter.writerow([result_text[j].text, result_text1[j].text])
 		spamwriter.writerow([])   	
 	return True
 
 
-#uncomment the next few line to use multiprocessors 去掉下面的注释如果你想用多进程的话
+#main 
+print('project start1')
 
-threadLock = multiprocessing.Lock()
-csvLock = multiprocessing.Lock()
+#create firfox explorer
+threadLock = threading.Lock()
+csvLock = threading.Lock()
 
-if __name__ == '__main__':
-	project_start = time.time()
+spamwriter = csv.writer(open('result_final.csv', 'w'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
-	jobs = []
-	my_ready = Value('d', -2.0)
-	my_counter = Value('d', 0.0)
-	for i in range(2):
-	    p = multiprocessing.Process(target=my_processors, args = (i+1, my_ready, my_counter))
-	    jobs.append(p)
-	    p.start()
+driver = []
+for i in range(my_total_thread):
+	driver_temp = init_driver()
+	driver.append(driver_temp)
 
-	for i in jobs:
-		i.join()
-	project_start = time.time() - project_start
-	print("Use ", project_start, "s to complete. Data size: ", my_counter.value)
+thread = []
+for i in range(my_total_thread):
+	thread_temp = myThread(i+1, driver[i])
+	thread.append(thread_temp)
 
+for i in range(my_total_thread):
+	thread[i].start()
 
-# uncommented the next few line to use multithread 去掉下面的注释如果你想用多线程的话
-
-# print('project start1')
-# project_start = time.time()
-# #create firfox explorer
-# threadLock = threading.Lock()
-# csvLock = threading.Lock()
-
-# spamwriter = csv.writer(open('result_final.csv', 'w'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
-
-# driver = []
-# for i in range(my_total_thread):
-# 	driver_temp = init_driver()
-# 	driver.append(driver_temp)
-
-# thread = []
-# for i in range(my_total_thread):
-# 	thread_temp = myThread(i+1, driver[i])
-# 	thread.append(thread_temp)
-
-# for i in range(my_total_thread):
-# 	thread[i].start()
-
-# for i in range(my_total_thread):
-# 	thread[i].join()
-
-# project_start = time.time() - project_start
-# print("Use ", project_start, "s to complete. Data size: ", my_counter)
+for i in range(my_total_thread):
+	thread[i].join()
