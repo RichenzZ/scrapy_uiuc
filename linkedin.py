@@ -17,7 +17,7 @@ import csv
 
 my_email = "nlyu2@illinois.edu"
 my_pass = "756251901"
-my_data_size = 300 #input
+my_data_size = 60 #input
 my_total_thread = 2 #input
 
 my_ready = -my_total_thread 
@@ -162,7 +162,7 @@ def get_personal_info_all_parent(driver, name_button, my_counter):
 	#print("thread begin....")
 	window_main = driver.window_handles[0]
 	for i in range(0, len(name_button)): #................................................
-		name_button[i].click()
+		name_button[i+35].click()
 		window_cur = driver.window_handles[1]
 		driver.switch_to_window(window_cur)
 
@@ -175,7 +175,7 @@ def get_personal_info_all_child(driver, name_button):
 	#print("thread child begin....")
 	window_main = driver.window_handles[0]
 	for i in range(0, 3):
-		a = name_button[i].get_attribute("href")
+		a = name_button[i+35].get_attribute("href")
 		driver.get(a)
 		waitForLoad(driver, 2.0)
 
@@ -213,7 +213,7 @@ def get_personal_info(driver, i, my_counter):
 			print("getting ", my_counter.value, " person")
 			spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
 			spamwriter.writerow([str(my_counter.value), result_name.text])
-			my_counter += 1
+			my_counter.value += 1.0
 			spamwriter.writerow(['NO INFO'])
 			spamwriter.writerow([])  
 		return False
@@ -222,7 +222,7 @@ def get_personal_info(driver, i, my_counter):
 		spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
 		spamwriter.writerow([str(my_counter.value), result_name.text])
 		print("getting ", my_counter.value, " person")
-		my_counter.value += 1
+		my_counter.value += 1.0
 		for j in range(0, min(len(result_text), len(result_text1))):
 			spamwriter.writerow([result_text[j].text, result_text1[j].text])
 		spamwriter.writerow([])   	
