@@ -33,8 +33,6 @@ top.geometry("800x500")
 top.configure(background = bg_)
 top.title("Scrapy!")
 
-progressbar_length = 100
-progress = ttk.Progressbar(top, length = progressbar_length)
 
 class myThread (threading.Thread):
 	def __init__(self, threadID, driver):
@@ -272,8 +270,6 @@ def main():
 
 def start_button():
 	global my_data_size, my_total_thread, progressbar_length, my_counter, total_data_size
-	loading = Label(top, text="Loading.....", background="white")
-	loading.place(x=300, y=400)
 	my_data_size = int(E1.get())
 	my_total_thread = int(E2.get())
 	main()
@@ -283,7 +279,7 @@ L1.config(font=('Helvetica', 36, 'bold'))
 L1.place(x=250, y=80)
 E1 = Entry(top, fg = bg_, bg = fg_)
 E1.place(x=300, y=150)
-L2 = Label(top, text = "How many thread: ", bg = bg_)
+L2 = Label(top, text = "How many cores: ", bg = bg_)
 L2.config(font=('Helvetica', 36, 'bold'))
 L2.place(x=250, y=200)
 E2 = Entry(top, fg = bg_, bg = fg_)
