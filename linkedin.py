@@ -13,6 +13,8 @@ import multiprocessing
 from multiprocessing import Pool, Process, Value, Array
 import copy
 import csv
+from tkinter import *
+from tkinter import ttk
 
 
 my_email = "nlyu2@illinois.edu"
@@ -22,6 +24,17 @@ my_total_thread = 2 #input
 
 my_ready = -my_total_thread 
 my_counter = 0
+total_data_size = 20
+
+bg_ = "#a1dbcd" #http://wiki.tcl.tk/37701
+fg_ = "azure"	#color scheme
+top = Tk()
+top.geometry("800x500")
+top.configure(background = bg_)
+top.title("Scrapy!")
+
+progressbar_length = 100
+progress = ttk.Progressbar(top, length = progressbar_length)
 
 class myThread (threading.Thread):
 	def __init__(self, threadID, driver):
@@ -30,11 +43,13 @@ class myThread (threading.Thread):
 		self.driver = driver
 	
 	def run(self):
-		global my_data_size, my_ready, my_total_thread
+		global my_data_size, my_ready, my_total_thread, total_data_size
 		print("thread ", self.threadID, " start....")
 		driver_to_alumini(self.driver)
 
 		name_button = get_person(self.driver)
+		total_data_size = len(name_button)
+
 		
 		name_button_str = int((self.threadID - 1) * len(name_button) / my_total_thread)
 		name_button_end = int((self.threadID) * len(name_button) / my_total_thread)
@@ -56,11 +71,12 @@ class myThread (threading.Thread):
 
 def my_processors(threadID, my_ready, my_counter):
 	driver = init_driver()
-	global my_data_size, my_total_thread
+	global my_data_size, my_total_thread, total_data_size
 	print(threadID, " start....")
 	driver_to_alumini(driver)
 
 	name_button = get_person(driver)
+	total_data_size = len(name_button)
 	
 	name_button_str = int((threadID - 1) * len(name_button) / my_total_thread)
 	name_button_end = int((threadID) * len(name_button) / my_total_thread)
@@ -145,6 +161,7 @@ def sparce_text(i):
 
 
 def get_person(driver):
+	global my_data_size
 	start= time.time()
 
 	while(True):
@@ -162,7 +179,7 @@ def get_personal_info_all_parent(driver, name_button, my_counter):
 	#print("thread begin....")
 	window_main = driver.window_handles[0]
 	for i in range(0, len(name_button)): #................................................
-		name_button[i+35].click()
+		name_button[i].click()
 		window_cur = driver.window_handles[1]
 		driver.switch_to_window(window_cur)
 
@@ -228,19 +245,20 @@ def get_personal_info(driver, i, my_counter):
 		spamwriter.writerow([])   	
 	return True
 
-
 #uncomment the next few line to use multiprocessors 去掉下面的注释如果你想用多进程的话
 
 threadLock = multiprocessing.Lock()
 csvLock = multiprocessing.Lock()
 
-if __name__ == '__main__':
-	project_start = time.time()
+#if __name__ == '__main__':
+def main():
 
+	project_start = time.time()
+	#gui()
 	jobs = []
 	my_ready = Value('d', -2.0)
 	my_counter = Value('d', 0.0)
-	for i in range(2):
+	for i in range(my_total_thread):
 	    p = multiprocessing.Process(target=my_processors, args = (i+1, my_ready, my_counter))
 	    jobs.append(p)
 	    p.start()
@@ -249,6 +267,31 @@ if __name__ == '__main__':
 		i.join()
 	project_start = time.time() - project_start
 	print("Use ", project_start, "s to complete. Data size: ", my_counter.value)
+	print("Scrapy Done!")
+	top.destroy()
+
+def start_button():
+	global my_data_size, my_total_thread, progressbar_length, my_counter, total_data_size
+	loading = Label(top, text="Loading.....", background="white")
+	loading.place(x=300, y=400)
+	my_data_size = int(E1.get())
+	my_total_thread = int(E2.get())
+	main()
+
+L1 = Label(top, text = "How long to scrapy: ", bg = bg_)
+L1.config(font=('Helvetica', 36, 'bold'))
+L1.place(x=250, y=80)
+E1 = Entry(top, fg = bg_, bg = fg_)
+E1.place(x=300, y=150)
+L2 = Label(top, text = "How many thread: ", bg = bg_)
+L2.config(font=('Helvetica', 36, 'bold'))
+L2.place(x=250, y=200)
+E2 = Entry(top, fg = bg_, bg = fg_)
+E2.place(x=300, y=270)
+B = Button(top, text = "Start Scrapy", command = start_button, fg = bg_, bg = bg_)
+B.config(font=('Helvetica' , 12,'bold'))
+B.place(x=340, y=350)
+top.mainloop()
 
 
 # uncommented the next few line to use multithread 去掉下面的注释如果你想用多线程的话
