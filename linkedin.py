@@ -18,8 +18,8 @@ from tkinter import ttk
 
 
 my_email = "nlyu2@illinois.edu"
-my_pass = "756251901"
-my_data_size = 60 #input
+my_pass = "Pds56094089"
+my_data_size = 5 #input
 my_total_thread = 2 #input
 
 my_ready = -my_total_thread 
@@ -33,6 +33,8 @@ top.geometry("800x500")
 top.configure(background = bg_)
 top.title("Scrapy!")
 
+progressbar_length = 100
+progress = ttk.Progressbar(top, length = progressbar_length)
 
 class myThread (threading.Thread):
 	def __init__(self, threadID, driver):
@@ -227,30 +229,33 @@ def get_personal_info(driver, i, my_counter):
 		with csvLock:
 			print("getting ", my_counter.value, " person")
 			spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
-			spamwriter.writerow([str(my_counter.value), result_name.text])
-			my_counter.value += 1.0
-			spamwriter.writerow(['NO INFO'])
-			spamwriter.writerow([])  
+			spamwriter.writerow([str(my_counter.value), result_name.text, 'NO INFO'])
+		my_counter.value += 1.0
 		return False
 
 	with csvLock:
 		spamwriter = csv.writer(open('result_final.csv', 'a'), delimiter=',', quoting=csv.QUOTE_MINIMAL)
-		spamwriter.writerow([str(my_counter.value), result_name.text])
 		print("getting ", my_counter.value, " person")
-		my_counter.value += 1.0
 		for j in range(0, min(len(result_text), len(result_text1))):
-			spamwriter.writerow([result_text[j].text, result_text1[j].text])
-		spamwriter.writerow([])   	
+			spamwriter.writerow([str(my_counter.value), result_name.text, result_text[j].text, result_text1[j].text])
+		my_counter.value += 1.0
+ 	
 	return True
+
 
 #uncomment the next few line to use multiprocessors 去掉下面的注释如果你想用多进程的话
 
 threadLock = multiprocessing.Lock()
 csvLock = multiprocessing.Lock()
 
+
 #if __name__ == '__main__':
 def main():
-
+	print("pro")
+	filename = "result_final.csv"
+	# opening the file with w+ mode truncates the file
+	f = open(filename, "w+")
+	f.close()
 	project_start = time.time()
 	#gui()
 	jobs = []
@@ -268,25 +273,29 @@ def main():
 	print("Scrapy Done!")
 	top.destroy()
 
+
 def start_button():
-	global my_data_size, my_total_thread, progressbar_length, my_counter, total_data_size
+	global my_data_size, my_total_thread
 	my_data_size = int(E1.get())
 	my_total_thread = int(E2.get())
 	main()
 
+author1 = Label(top, text = "Proudly Produced By Zhao Chen, Nuocheng Lyu, Mingkang Yang", bg = bg_)
+author1.place(x=230, y=420)
+author1.config(font=("Times", 12, "bold italic"))
 L1 = Label(top, text = "How long to scrapy: ", bg = bg_)
-L1.config(font=('Helvetica', 36, 'bold'))
+L1.config(font=('Times', 32, 'bold'))
 L1.place(x=250, y=80)
 E1 = Entry(top, fg = bg_, bg = fg_)
 E1.place(x=300, y=150)
 L2 = Label(top, text = "How many cores: ", bg = bg_)
-L2.config(font=('Helvetica', 36, 'bold'))
-L2.place(x=250, y=200)
+L2.config(font=('Times', 32, 'bold'))
+L2.place(x=270, y=200)
 E2 = Entry(top, fg = bg_, bg = fg_)
 E2.place(x=300, y=270)
 B = Button(top, text = "Start Scrapy", command = start_button, fg = bg_, bg = bg_)
-B.config(font=('Helvetica' , 12,'bold'))
-B.place(x=340, y=350)
+B.config(font=('Times' , 12,'bold'))
+B.place(x=340, y=330)
 top.mainloop()
 
 
