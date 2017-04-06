@@ -3,7 +3,9 @@
 This is a multithread/process web scrapy that can get information for UIUC aluminai from LinkedIn.  
 这是一个多线程／进程网络爬虫，可以抓取领英上面uiuc校友的信息。    
 Information include: (Name, Connection, Companys, Titles, School, Degree, Major)  
-我们统计的信息包括：（姓名，好友数，工作公司，职位，学校，文凭，专业）  
+我们统计的信息包括：（姓名，好友数，工作公司，职位，学校，文凭，专业）   
+This project is made by three UIUC students(three contributor), and this is made as an tool for our research symposium 2017. We are going to demo our report as a research poster in campus on April 17th.  
+这个是由三位uiuc同学做的（见贡献者信息），我们做这个是为了参加uiuc 2017研究展览会。在四月17号我们会吧我们爬虫得到的数据分析成结果展示在我们的研究海报上。
 # How to use:  
 You need... a labtop + any linkedin account...and now you are all set!
 This program is runing on python3 + selenium so you probably need to install the some library.  
